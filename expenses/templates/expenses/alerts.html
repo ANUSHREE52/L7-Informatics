@@ -1,0 +1,580 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Alerts - Expense Tracker{% endblock %}
+
+{% block header %}
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">Alerts</h1>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+                <i class="bi bi-plus-lg"></i> Create Alert
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="alertsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-alerts" type="button" role="tab">
+                            <i class="bi bi-bell"></i> Active Alerts
+                            {% if active_alerts_count > 0 %}
+                                <span class="badge bg-danger ms-1">{{ active_alerts_count }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="dismissed-tab" data-bs-toggle="tab" data-bs-target="#dismissed-alerts" type="button" role="tab">
+                            <i class="bi bi-bell-slash"></i> Dismissed Alerts
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#alert-settings" type="button" role="tab">
+                            <i class="bi bi-gear"></i> Alert Settings
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="alertsTabContent">
+                    <!-- Active Alerts Tab -->
+                    <div class="tab-pane fade show active" id="active-alerts" role="tabpanel">
+                        {% if active_alerts %}
+                            <div class="list-group list-group-flush">
+                                {% for alert in active_alerts %}
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <div class="alert-icon me-3">
+                                                    {% if alert.alert_type == 'budget' %}
+                                                        <div class="bg-soft-warning text-warning p-2 rounded-circle">
+                                                            <i class="bi bi-currency-dollar fs-4"></i>
+                                                        </div>
+                                                    {% elif alert.alert_type == 'bill' %}
+                                                        <div class="bg-soft-danger text-danger p-2 rounded-circle">
+                                                            <i class="bi bi-receipt fs-4"></i>
+                                                        </div>
+                                                    {% elif alert.alert_type == 'goal' %}
+                                                        <div class="bg-soft-success text-success p-2 rounded-circle">
+                                                            <i class="bi bi-flag fs-4"></i>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="bg-soft-info text-info p-2 rounded-circle">
+                                                            <i class="bi bi-bell fs-4"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div>
+                                                    <h5 class="mb-1">{{ alert.title }}</h5>
+                                                    <p class="mb-1 text-muted">{{ alert.message }}</p>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-clock"></i> {{ alert.created_at|timesince }} ago
+                                                        {% if alert.related_object %}
+                                                            • 
+                                                            {% if alert.alert_type == 'budget' %}
+                                                                <a href="{% url 'expenses:budget_detail' alert.related_object.id %}">View Budget</a>
+                                                            {% elif alert.alert_type == 'expense' %}
+                                                                <a href="{% url 'expenses:expense_detail' alert.related_object.id %}">View Expense</a>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                                        data-bs-toggle="modal" data-bs-target="#dismissAlertModal{{ alert.id }}">
+                                                    <i class="bi bi-check-lg"></i> Dismiss
+                                                </button>
+                                                {% if alert.alert_type == 'budget' and alert.related_object %}
+                                                    <a href="{% url 'expenses:budget_edit' alert.related_object.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-pencil"></i> Edit
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Dismiss Alert Modal -->
+                                        <div class="modal fade" id="dismissAlertModal{{ alert.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Dismiss Alert</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to dismiss this alert?</p>
+                                                        <p class="text-muted">{{ alert.title }}</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{% url 'expenses:dismiss_alert' alert.id %}" method="post" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-primary">Dismiss</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Pagination -->
+                            {% if active_alerts.has_other_pages %}
+                                <nav class="mt-4">
+                                    <ul class="pagination justify-content-center">
+                                        {% if active_alerts.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?active_page={{ active_alerts.previous_page_number }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for i in active_alerts.paginator.page_range %}
+                                            {% if active_alerts.number == i %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ i }}</span>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?active_page={{ i }}">{{ i }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if active_alerts.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?active_page={{ active_alerts.next_page_number }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-bell-slash text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5>No active alerts</h5>
+                                <p class="text-muted">You're all caught up! No new alerts to show.</p>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+                                    <i class="bi bi-plus-lg"></i> Create Alert
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Dismissed Alerts Tab -->
+                    <div class="tab-pane fade" id="dismissed-alerts" role="tabpanel">
+                        {% if dismissed_alerts %}
+                            <div class="list-group list-group-flush">
+                                {% for alert in dismissed_alerts %}
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3 text-muted">
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <h5 class="mb-1">{{ alert.title }}</h5>
+                                                    <p class="mb-1 text-muted">{{ alert.message }}</p>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-clock"></i> Dismissed {{ alert.updated_at|timesince }} ago
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <form action="{% url 'expenses:restore_alert' alert.id %}" method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                        data-bs-toggle="modal" data-bs-target="#deleteAlertModal{{ alert.id }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Alert Modal -->
+                                        <div class="modal fade" id="deleteAlertModal{{ alert.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Delete Alert</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to permanently delete this alert?</p>
+                                                        <p class="text-muted">{{ alert.title }}</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{% url 'expenses:delete_alert' alert.id %}" method="post" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Pagination -->
+                            {% if dismissed_alerts.has_other_pages %}
+                                <nav class="mt-4">
+                                    <ul class="pagination justify-content-center">
+                                        {% if dismissed_alerts.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?dismissed_page={{ dismissed_alerts.previous_page_number }}" aria-label="Previous">
+                                                    <span aria-hidden="true">&laquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                                            </li>
+                                        {% endif %}
+                                        
+                                        {% for i in dismissed_alerts.paginator.page_range %}
+                                            {% if dismissed_alerts.number == i %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ i }}</span>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?dismissed_page={{ i }}">{{ i }}</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if dismissed_alerts.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?dismissed_page={{ dismissed_alerts.next_page_number }}" aria-label="Next">
+                                                    <span aria-hidden="true">&raquo;</span>
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <div class="mb-3">
+                                    <i class="bi bi-check-circle text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5>No dismissed alerts</h5>
+                                <p class="text-muted">You don't have any dismissed alerts.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Alert Settings Tab -->
+                    <div class="tab-pane fade" id="alert-settings" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8 mx-auto">
+                                <div class="card border-0">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-4">Notification Preferences</h5>
+                                        
+                                        <form method="post" action="{% url 'expenses:update_alert_settings' %}">
+                                            {% csrf_token %}
+                                            
+                                            <div class="mb-4">
+                                                <h6 class="mb-3">Budget Alerts</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="budgetThreshold" name="budget_threshold" 
+                                                           {% if alert_settings.budget_threshold %}checked{% endif %}>
+                                                    <label class="form-check-label" for="budgetThreshold">
+                                                        Notify when approaching budget limit
+                                                    </label>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label for="thresholdAmount" class="form-label">Threshold amount</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">%</span>
+                                                            <input type="number" class="form-control" id="thresholdAmount" name="threshold_amount" 
+                                                                   min="1" max="100" value="{{ alert_settings.threshold_amount|default:'80' }}">
+                                                        </div>
+                                                        <div class="form-text">
+                                                            Receive alerts when you've spent this percentage of your budget
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-4">
+                                                <h6 class="mb-3">Bill Reminders</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="billReminders" name="bill_reminders"
+                                                           {% if alert_settings.bill_reminders %}checked{% endif %}>
+                                                    <label class="form-check-label" for="billReminders">
+                                                        Enable bill payment reminders
+                                                    </label>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label for="reminderDays" class="form-label">Remind me</label>
+                                                        <select class="form-select" id="reminderDays" name="reminder_days">
+                                                            <option value="1" {% if alert_settings.reminder_days == 1 %}selected{% endif %}>1 day before</option>
+                                                            <option value="3" {% if alert_settings.reminder_days == 3 or not alert_settings.reminder_days %}selected{% endif %}>3 days before</option>
+                                                            <option value="7" {% if alert_settings.reminder_days == 7 %}selected{% endif %}>1 week before</option>
+                                                            <option value="14" {% if alert_settings.reminder_days == 14 %}selected{% endif %}>2 weeks before</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-4">
+                                                <h6 class="mb-3">Spending Alerts</h6>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="largeExpense" name="large_expense"
+                                                           {% if alert_settings.large_expense %}checked{% endif %}>
+                                                    <label class="form-check-label" for="largeExpense">
+                                                        Notify about large expenses
+                                                    </label>
+                                                </div>
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <label for="largeExpenseAmount" class="form-label">Amount threshold</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">$</span>
+                                                            <input type="number" class="form-control" id="largeExpenseAmount" name="large_expense_amount" 
+                                                                   min="0" step="0.01" value="{{ alert_settings.large_expense_amount|default:'100' }}">
+                                                        </div>
+                                                        <div class="form-text">
+                                                            Receive alerts for expenses above this amount
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-4">
+                                                <h6 class="mb-3">Notification Methods</h6>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications"
+                                                           {% if alert_settings.email_notifications %}checked{% endif %}>
+                                                    <label class="form-check-label" for="emailNotifications">
+                                                        Email notifications
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="pushNotifications" name="push_notifications"
+                                                           {% if alert_settings.push_notifications %}checked{% endif %}>
+                                                    <label class="form-check-label" for="pushNotifications">
+                                                        Push notifications
+                                                    </label>
+                                                </div>
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="inAppNotifications" name="in_app_notifications"
+                                                           {% if alert_settings.in_app_notifications == None or alert_settings.in_app_notifications %}checked{% endif %}>
+                                                    <label class="form-check-label" for="inAppNotifications">
+                                                        In-app notifications
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-end mt-4">
+                                                <button type="reset" class="btn btn-outline-secondary me-2">Reset to Defaults</button>
+                                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Alert Modal -->
+<div class="modal fade" id="createAlertModal" tabindex="-1" aria-labelledby="createAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createAlertModalLabel">Create New Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'expenses:create_alert' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="alertType" class="form-label">Alert Type</label>
+                        <select class="form-select" id="alertType" name="alert_type" required>
+                            <option value="">Select alert type</option>
+                            <option value="budget">Budget Alert</option>
+                            <option value="bill">Bill Reminder</option>
+                            <option value="goal">Savings Goal</option>
+                            <option value="custom">Custom Alert</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alertTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="alertTitle" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alertMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="alertMessage" name="message" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alertPriority" class="form-label">Priority</label>
+                        <select class="form-select" id="alertPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="alertDate" class="form-label">Alert Date</label>
+                        <input type="date" class="form-control" id="alertDate" name="alert_date" required>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="recurringAlert" name="is_recurring">
+                        <label class="form-check-label" for="recurringAlert">Recurring Alert</label>
+                    </div>
+                    
+                    <div id="recurringOptions" style="display: none;">
+                        <div class="mb-3">
+                            <label for="recurrenceType" class="form-label">Recurrence</label>
+                            <select class="form-select" id="recurrenceType" name="recurrence_type">
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">End Date (Optional)</label>
+                            <input type="date" class="form-control" id="endDate" name="end_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle recurring options
+    const recurringCheckbox = document.getElementById('recurringAlert');
+    const recurringOptions = document.getElementById('recurringOptions');
+    
+    if (recurringCheckbox) {
+        recurringCheckbox.addEventListener('change', function() {
+            recurringOptions.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    // Set default alert date to today
+    const today = new Date().toISOString().split('T')[0];
+    const alertDateInput = document.getElementById('alertDate');
+    if (alertDateInput && !alertDateInput.value) {
+        alertDateInput.value = today;
+    }
+    
+    // Set minimum date for alert date
+    if (alertDateInput) {
+        alertDateInput.min = today;
+    }
+    
+    // Set minimum date for end date (same as alert date)
+    const endDateInput = document.getElementById('endDate');
+    if (endDateInput) {
+        endDateInput.min = today;
+        
+        // When alert date changes, update end date min value
+        if (alertDateInput) {
+            alertDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+            });
+        }
+    }
+    
+    // Handle alert type changes
+    const alertTypeSelect = document.getElementById('alertType');
+    const alertTitleInput = document.getElementById('alertTitle');
+    const alertMessageInput = document.getElementById('alertMessage');
+    const alertPrioritySelect = document.getElementById('alertPriority');
+    
+    if (alertTypeSelect && alertTitleInput && alertMessageInput) {
+        alertTypeSelect.addEventListener('change', function() {
+            const type = this.value;
+            let title = '';
+            let message = '';
+            let priority = 'medium';
+            
+            switch(type) {
+                case 'budget':
+                    title = 'Budget Limit Approaching';
+                    message = 'You are close to reaching your budget limit for this category.';
+                    priority = 'high';
+                    break;
+                case 'bill':
+                    title = 'Upcoming Bill Payment';
+                    message = 'Your bill payment is due soon.';
+                    priority = 'high';
+                    break;
+                case 'goal':
+                    title = 'Savings Goal Progress';
+                    message = 'You are making progress towards your savings goal!';
+                    priority = 'medium';
+                    break;
+                case 'custom':
+                    title = '';
+                    message = '';
+                    break;
+                default:
+                    return;
+            }
+            
+            alertTitleInput.value = title;
+            alertMessageInput.value = message;
+            alertPrioritySelect.value = priority;
+        });
+    }
+});
+</script>
+{% endblock %}

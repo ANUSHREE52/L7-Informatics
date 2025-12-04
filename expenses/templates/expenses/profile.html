@@ -1,0 +1,628 @@
+{% load static %}
+{% extends 'expenses/base.html' %}
+
+{% block title %}My Profile - Expense Tracker{% endblock %}
+
+{% block header %}
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">My Profile</h1>
+        <div>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="bi bi-pencil"></i> Edit Profile
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<!-- Toast Notifications -->
+<div class="toast-container">
+    <div id="avatarUpdatedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
+            <strong class="me-auto">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Your profile picture has been updated successfully.
+        </div>
+    </div>
+    
+    <div id="prefsSavedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
+            <strong class="me-auto">Preferences Saved</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Your preferences have been saved successfully.
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="position-relative d-inline-block mb-3">
+                    <img src="{{ user.profile.avatar_url|default:'/static/images/default-avatar.png' }}" 
+                         alt="Profile Picture" 
+                         class="rounded-circle img-thumbnail" 
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                    <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" 
+                            style="width: 36px; height: 36px;"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#changeAvatarModal">
+                        <i class="bi bi-camera"></i>
+                    </button>
+                </div>
+                <h4 class="mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted mb-2">@{{ user.username }}</p>
+                <p class="text-muted mb-3">
+                    <i class="bi bi-envelope me-1"></i> {{ user.email }}
+                    {% if user.profile.email_verified %}
+                        <span class="badge bg-success ms-1">Verified</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark ms-1">Not Verified</span>
+                    {% endif %}
+                </p>
+                
+                <div class="d-flex justify-content-center mb-3">
+                    <a href="#" class="btn btn-outline-primary btn-sm me-2">
+                        <i class="bi bi-link-45deg"></i> Connect Social
+                    </a>
+                    <a href="{% url 'account_change_password' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-key"></i> Change Password
+                    </a>
+                </div>
+                
+                <div class="d-flex justify-content-center">
+                    <a href="#" class="text-primary me-3">
+                        <i class="bi bi-facebook"></i>
+                    </a>
+                    <a href="#" class="text-info me-3">
+                        <i class="bi bi-twitter"></i>
+                    </a>
+                    <a href="#" class="text-danger">
+                        <i class="bi bi-google"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Account Created</h6>
+                        <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-success">
+                            <i class="bi bi-check-circle-fill"></i> Active
+                        </div>
+                        <small class="text-muted">Member for {{ user.date_joined|timesince }}</small>
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" 
+                         aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="d-grid">
+                    <a href="{% url 'account_logout' %}" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Account Security</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Two-Factor Authentication</h6>
+                        <small class="text-muted">Add an extra layer of security</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="twoFactorAuth" 
+                               {% if user.profile.two_factor_enabled %}checked{% endif %}>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="mb-0">Login Notifications</h6>
+                        <small class="text-muted">Get notified of new logins</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="loginNotifications" 
+                               {% if user.profile.login_notifications %}checked{% endif %}>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Suspicious Activity</h6>
+                        <small class="text-muted">Alert me about unusual activity</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="suspiciousActivity" 
+                               {% if user.profile.suspicious_activity_alerts %}checked{% endif %}>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Full Name</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">{{ user.get_full_name|default:'Not set' }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Username</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">{{ user.username }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Email</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">
+                            {{ user.email }}
+                            {% if not user.profile.email_verified %}
+                                <a href="#" class="ms-2 text-primary">Verify now</a>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Phone</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">
+                            {{ user.profile.phone_number|default:'Not set' }}
+                        </p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Address</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">
+                            {% if user.profile.address %}
+                                {{ user.profile.address }}, {{ user.profile.city }}, 
+                                {{ user.profile.state }} {{ user.profile.zip_code }}, 
+                                {{ user.profile.get_country_display }}
+                            {% else %}
+                                Not set
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3">
+                        <p class="mb-0">Bio</p>
+                    </div>
+                    <div class="col-sm-9">
+                        <p class="text-muted mb-0">
+                            {{ user.profile.bio|default:'No bio provided'|linebreaksbr }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Account Preferences</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Default Currency</label>
+                    <select class="form-select" id="defaultCurrency">
+                        <option value="USD" {% if user.profile.currency == 'USD' %}selected{% endif %}>US Dollar ($)</option>
+                        <option value="EUR" {% if user.profile.currency == 'EUR' %}selected{% endif %}>Euro (€)</option>
+                        <option value="GBP" {% if user.profile.currency == 'GBP' %}selected{% endif %}>British Pound (£)</option>
+                        <option value="JPY" {% if user.profile.currency == 'JPY' %}selected{% endif %}>Japanese Yen (¥)</option>
+                        <option value="INR" {% if user.profile.currency == 'INR' %}selected{% endif %}>Indian Rupee (₹)</option>
+                        <option value="AUD" {% if user.profile.currency == 'AUD' %}selected{% endif %}>Australian Dollar (A$)</option>
+                        <option value="CAD" {% if user.profile.currency == 'CAD' %}selected{% endif %}>Canadian Dollar (C$)</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Date Format</label>
+                    <select class="form-select" id="dateFormat">
+                        <option value="MM/DD/YYYY" {% if user.profile.date_format == 'MM/DD/YYYY' %}selected{% endif %}>MM/DD/YYYY</option>
+                        <option value="DD/MM/YYYY" {% if user.profile.date_format == 'DD/MM/YYYY' %}selected{% endif %}>DD/MM/YYYY</option>
+                        <option value="YYYY-MM-DD" {% if user.profile.date_format == 'YYYY-MM-DD' %}selected{% endif %}>YYYY-MM-DD</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Time Zone</label>
+                    <select class="form-select" id="timeZone">
+                        <option value="UTC" {% if user.profile.timezone == 'UTC' %}selected{% endif %}>(UTC) Coordinated Universal Time</option>
+                        <option value="EST" {% if user.profile.timezone == 'EST' %}selected{% endif %}>(UTC-05:00) Eastern Time</option>
+                        <option value="PST" {% if user.profile.timezone == 'PST' %}selected{% endif %}>(UTC-08:00) Pacific Time</option>
+                        <option value="IST" {% if user.profile.timezone == 'IST' %}selected{% endif %}>(UTC+05:30) India Standard Time</option>
+                        <option value="JST" {% if user.profile.timezone == 'JST' %}selected{% endif %}>(UTC+09:00) Japan Standard Time</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Theme</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="theme" id="lightTheme" 
+                                   value="light" {% if user.profile.theme == 'light' %}checked{% endif %}>
+                            <label class="form-check-label d-flex flex-column align-items-center" for="lightTheme">
+                                <div class="theme-preview light mb-1"></div>
+                                <span>Light</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="theme" id="darkTheme" 
+                                   value="dark" {% if user.profile.theme == 'dark' %}checked{% endif %}>
+                            <label class="form-check-label d-flex flex-column align-items-center" for="darkTheme">
+                                <div class="theme-preview dark mb-1"></div>
+                                <span>Dark</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="theme" id="systemTheme" 
+                                   value="system" {% if user.profile.theme == 'system' or not user.profile.theme %}checked{% endif %}>
+                            <label class="form-check-label d-flex flex-column align-items-center" for="systemTheme">
+                                <div class="theme-preview system mb-1"></div>
+                                <span>System</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="compactView" 
+                           {% if user.profile.compact_view %}checked{% endif %}>
+                    <label class="form-check-label" for="compactView">Use compact view</label>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary" id="savePreferences">
+                        <i class="bi bi-save"></i> Save Preferences
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-danger">Export Your Data</h6>
+                    <p class="text-muted">Download all your data in a portable format.</p>
+                    <button type="button" class="btn btn-outline-primary">
+                        <i class="bi bi-download"></i> Export Data
+                    </button>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-danger">Deactivate Account</h6>
+                    <p class="text-muted">Temporarily deactivate your account. You can reactivate it later by logging in.</p>
+                    <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deactivateAccountModal">
+                        <i class="bi bi-pause-circle"></i> Deactivate Account
+                    </button>
+                </div>
+                
+                <div>
+                    <h6 class="text-danger">Delete Account</h6>
+                    <p class="text-muted">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        <i class="bi bi-trash"></i> Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'expenses:update_profile' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3 text-center">
+                        <div class="position-relative d-inline-block">
+                            <img id="profileImagePreview" 
+                                 src="{{ user.profile.avatar_url|default:'/static/images/default-avatar.png' }}" 
+                                 class="rounded-circle img-thumbnail" 
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                        </div>
+                        <div class="mt-2">
+                            <input type="file" class="form-control d-none" id="profileImage" name="avatar" accept="image/*">
+                            <label for="profileImage" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-upload"></i> Upload New Photo
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="firstName" name="first_name" 
+                               value="{{ user.first_name }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="lastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" name="last_name" 
+                               value="{{ user.last_name }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bio" class="form-label">Bio</label>
+                        <textarea class="form-control" id="bio" name="bio" rows="3">{{ user.profile.bio }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               value="{{ user.profile.phone_number }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <input type="text" class="form-control mb-2" id="address" name="address" 
+                               value="{{ user.profile.address }}" placeholder="Street address">
+                        
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="city" 
+                                       value="{{ user.profile.city }}" placeholder="City">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="state" 
+                                       value="{{ user.profile.state }}" placeholder="State/Province">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="zip_code" 
+                                       value="{{ user.profile.zip_code }}" placeholder="ZIP/Postal code">
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-select" name="country">
+                                    <option value="">Select Country</option>
+                                    {% for code, name in countries %}
+                                        <option value="{{ code }}" 
+                                                {% if user.profile.country == code %}selected{% endif %}>
+                                            {{ name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Change Avatar Modal -->
+<div class="modal fade" id="changeAvatarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Profile Picture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-4">
+                    <div id="avatarPreview" class="mx-auto mb-3" 
+                         style="width: 150px; height: 150px; border-radius: 50%; 
+                                background-size: cover; background-position: center;
+                                background-image: url('{{ user.profile.avatar_url|default:"/static/images/default-avatar.png" }}');">
+                    </div>
+                    <input type="file" class="form-control d-none" id="avatarInput" accept="image/*">
+                    <button type="button" class="btn btn-outline-primary" id="uploadAvatarBtn">
+                        <i class="bi bi-upload"></i> Upload Photo
+                    </button>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Or choose an avatar</h6>
+                    <div class="d-flex flex-wrap justify-content-center gap-2" id="defaultAvatars">
+                        {% for i in "12345678"|make_list %}
+                            <div class="avatar-option" data-avatar="{{ i }}">
+                                <img src="/static/images/avatars/avatar-{{ i }}.png" 
+                                     class="rounded-circle border avatar-selector"
+                                     onmouseover="this.style.transform='scale(1.1)'"
+                                     onmouseout="this.style.transform='scale(1)'">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto" id="removeAvatarBtn"
+                        {% if not user.profile.avatar %} disabled {% endif %}>
+                    <i class="bi bi-trash"></i> Remove Photo
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveAvatarBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Account Modal -->
+<div class="modal fade" id="deactivateAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Deactivate Your Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'expenses:deactivate_account' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Your account will be deactivated but not deleted. You can reactivate it by logging in again.
+                    </div>
+                    <div class="mb-3">
+                        <label for="deactivateReason" class="form-label">Reason for deactivating (optional)</label>
+                        <select class="form-select" id="deactivateReason" name="reason">
+                            <option value="">Select a reason</option>
+                            <option value="not_using">I'm not using this service anymore</option>
+                            <option value="found_better">I found a better alternative</option>
+                            <option value="too_expensive">It's too expensive</option>
+                            <option value="missing_features">Missing features I need</option>
+                            <option value="too_complex">Too complicated to use</option>
+                            <option value="other">Other reason</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deactivateFeedback" class="form-label">Feedback (optional)</label>
+                        <textarea class="form-control" id="deactivateFeedback" name="feedback" 
+                                  rows="3" placeholder="Please let us know how we can improve..."></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="deactivateConfirm" required>
+                        <label class="form-check-label" for="deactivateConfirm">
+                            I understand that I can reactivate my account by logging in again.
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Deactivate My Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">Delete Your Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'expenses:delete_account' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Warning:</strong> This action cannot be undone. All your data will be permanently deleted.
+                    </div>
+                    
+                    <p>Before you go, please let us know why you're deleting your account:</p>
+                    
+                    <div class="mb-3">
+                        <select class="form-select" id="deleteReason" name="reason" required>
+                            <option value="">Select a reason</option>
+                            <option value="not_using">I'm not using this service anymore</option>
+                            <option value="found_better">I found a better alternative</option>
+                            <option value="too_expensive">It's too expensive</option>
+                            <option value="missing_features">Missing features I need</option>
+                            <option value="too_complex">Too complicated to use</option>
+                            <option value="privacy">Privacy concerns</option>
+                            <option value="other">Other reason</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="deleteFeedback" class="form-label">Your feedback (optional)</label>
+                        <textarea class="form-control" id="deleteFeedback" name="feedback" 
+                                  rows="3" placeholder="Please let us know how we can improve..."></textarea>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="deleteConfirm1" required>
+                        <label class="form-check-label" for="deleteConfirm1">
+                            I understand that all my data will be permanently deleted.
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="deleteConfirm2" required>
+                        <label class="form-check-label" for="deleteConfirm2">
+                            I have exported any data I want to keep.
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmEmail" class="form-label">
+                            To confirm, type your email <strong>{{ user.email }}</strong> below:
+                        </label>
+                        <input type="email" class="form-control" id="confirmEmail" 
+                               placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">
+                            Enter your password to confirm account deletion:
+                        </label>
+                        <input type="password" class="form-control" id="confirmPassword" 
+                               name="password" placeholder="Your password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        <i class="bi bi-trash"></i> Permanently Delete My Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'expenses/css/profile.css' %}">
+{% endblock extra_css %}
+
+{% block extra_js %}
+    <script src="{% static 'expenses/js/profile.js' %}"></script>
+{% endblock extra_js %}

@@ -1,0 +1,288 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Server Error - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="error-content py-5">
+                <div class="error-illustration mb-4">
+                    <img src="{% static 'images/illustrations/500.svg' %}" 
+                         alt="500 Server Error" 
+                         class="img-fluid" 
+                         style="max-height: 250px;">
+                </div>
+                
+                <div class="error-code display-1 fw-bold text-danger mb-2">500</div>
+                <h1 class="display-5 fw-bold mb-3">Oops! Something went wrong</h1>
+                <p class="lead text-muted mb-4">
+                    We're experiencing some technical difficulties. Our team has been notified and we're working on a fix.
+                </p>
+                
+                <div class="alert alert-warning text-start mb-4 mx-auto" style="max-width: 600px;">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0 me-3">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading">Technical Details</h5>
+                            <p class="mb-0 small">
+                                {% if request.sentry.id %}
+                                    <strong>Error ID:</strong> {{ request.sentry.id }}<br>
+                                {% endif %}
+                                <strong>Timestamp:</strong> {% now "F j, Y H:i:s" %}<br>
+                                <strong>Request ID:</strong> {{ request.id }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3 flex-wrap mb-5">
+                    <a href="{% url 'expenses:dashboard' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-door me-2"></i> Return to Dashboard
+                    </a>
+                    <a href="{% url 'expenses:contact' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-envelope me-2"></i> Contact Support
+                    </a>
+                </div>
+                
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="mb-3">What you can do next:</h5>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 text-primary me-3">
+                                        <i class="bi bi-arrow-clockwise" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6>Refresh the page</h6>
+                                        <p class="text-muted small mb-0">
+                                            Sometimes the problem is temporary. Try refreshing the page.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 text-primary me-3">
+                                        <i class="bi bi-browser-chrome" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6>Try another browser</h6>
+                                        <p class="text-muted small mb-0">
+                                            The issue might be specific to your current browser.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 text-primary me-3">
+                                        <i class="bi bi-trash" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6>Clear cache and cookies</h6>
+                                        <p class="text-muted small mb-0">
+                                            Stale data might be causing the issue. Clear your browser's cache.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 text-primary me-3">
+                                        <i class="bi bi-headset" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h6>Contact Support</h6>
+                                        <p class="text-muted small mb-0">
+                                            If the problem persists, our support team is here to help.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-muted small">
+                    <p class="mb-1">
+                        <i class="bi bi-info-circle me-1"></i>
+                        If you're a developer, check the console for more details.
+                    </p>
+                    <p class="mb-0">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Page generated on {% now "F j, Y \a\t H:i:s T" %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.error-content {
+    padding: 3rem 0;
+}
+
+.error-code {
+    font-size: 6rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #dc3545, #fd7e14);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+    .error-code {
+        font-size: 4rem;
+    }
+    
+    h1.display-5 {
+        font-size: 1.75rem;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.75rem !important;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .col-md-6:not(:last-child) {
+        margin-bottom: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to the error code
+    const errorCode = document.querySelector('.error-code');
+    if (errorCode) {
+        errorCode.style.opacity = '0';
+        errorCode.style.transform = 'scale(0.8)';
+        errorCode.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        
+        setTimeout(() => {
+            errorCode.style.opacity = '1';
+            errorCode.style.transform = 'scale(1)';
+        }, 100);
+    }
+    
+    // Add pulse animation to the alert
+    const alertBox = document.querySelector('.alert');
+    if (alertBox) {
+        setTimeout(() => {
+            alertBox.classList.add('animate__animated', 'animate__pulse');
+            
+            // Remove animation class after it completes
+            setTimeout(() => {
+                alertBox.classList.remove('animate__animated', 'animate__pulse');
+            }, 1000);
+        }, 500);
+    }
+    
+    // Add hover effect to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 0.5rem 1.5rem rgba(0, 0, 0, 0.1)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 0.25rem 0.5rem rgba(0, 0, 0, 0.05)';
+        });
+    });
+    
+    // Add focus styles for accessibility
+    const focusableElements = document.querySelectorAll('a, button, input, select, textarea');
+    focusableElements.forEach(el => {
+        el.addEventListener('focus', function() {
+            this.style.outline = '2px solid #0d6efd';
+            this.style.outlineOffset = '2px';
+            this.style.borderRadius = '0.25rem';
+        });
+        
+        el.addEventListener('blur', function() {
+            this.style.outline = 'none';
+        });
+    });
+    
+    // Add error reporting functionality
+    const reportErrorBtn = document.getElementById('reportErrorBtn');
+    if (reportErrorBtn) {
+        reportErrorBtn.addEventListener('click', function() {
+            const errorDetails = {
+                errorId: '{{ request.sentry.id }}',
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                userAgent: navigator.userAgent
+            };
+            
+            // Here you would typically send this to your error tracking service
+            console.log('Error reported:', errorDetails);
+            
+            // Show success message
+            const toast = new bootstrap.Toast(document.getElementById('errorReportedToast'));
+            toast.show();
+            
+            // Disable button to prevent multiple submissions
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-check-circle me-2"></i> Error Reported';
+        });
+    }
+});
+</script>
+
+<!-- Error Reported Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="errorReportedToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong class="me-auto">Thank You!</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            We've received your error report and will look into it shortly.
+        </div>
+    </div>
+</div>
+{% endblock %}

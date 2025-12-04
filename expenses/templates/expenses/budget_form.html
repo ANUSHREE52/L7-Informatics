@@ -1,0 +1,340 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}{{ title }} - Expense Tracker{% endblock %}
+
+{% block header %}{{ title }}{% endblock %}
+
+{% block header_buttons %}
+    <a href="{% url 'expenses:budget_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Budgets
+    </a>
+{% endblock %}
+
+{% block contcent %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                {{ form.category.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.category.name }}" 
+                                    id="{{ form.category.id_for_label }}" 
+                                    class="form-select{% if form.category.errors %} is-invalid{% endif %}" 
+                                    required>
+                                <option value="">Select a category</option>
+                                {% for value, label in form.category.field.choices %}
+                                    <option value="{{ value }}" 
+                                            {% if form.category.value == value|stringformat:'s' %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.category.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.category.errors.0 }}
+                                </div>
+                            {% else %}
+                                <div class="invalid-feedback">
+                                    Please select a category.
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <a href="{% url 'expenses:category_add' %}?next={{ request.path|urlencode }}" 
+                                   class="text-decoration-none">
+                                    <i class="bi bi-plus-circle"></i> Add new category
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                {{ form.amount.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       name="{{ form.amount.name }}" 
+                                       id="{{ form.amount.id_for_label }}" 
+                                       class="form-control{% if form.amount.errors %} is-invalid{% endif %}" 
+                                       value="{{ form.amount.value|default:'' }}" 
+                                       step="0.01" 
+                                       min="0.01" 
+                                       required>
+                                {% if form.amount.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.amount.errors.0 }}
+                                    </div>
+                                {% else %}
+                                    <div class="invalid-feedback">
+                                        Please enter a valid amount.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                {{ form.start_date.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   name="{{ form.start_date.name }}" 
+                                   id="{{ form.start_date.id_for_label }}" 
+                                   class="form-control{% if form.start_date.errors %} is-invalid{% endif %}" 
+                                   value="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" 
+                                   required>
+                            {% if form.start_date.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.start_date.errors.0 }}
+                                </div>
+                            {% else %}
+                                <div class="invalid-feedback">
+                                    Please select a start date.
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                {{ form.end_date.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   name="{{ form.end_date.name }}" 
+                                   id="{{ form.end_date.id_for_label }}" 
+                                   class="form-control{% if form.end_date.errors %} is-invalid{% endif %}" 
+                                   value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" 
+                                   min="{{ form.start_date.value|date:'Y-m-d'|default:'' }}" 
+                                   required>
+                            {% if form.end_date.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.end_date.errors.0 }}
+                                </div>
+                            {% else %}
+                                <div class="invalid-feedback">
+                                    Please select an end date after the start date.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">
+                            {{ form.notes.label }}
+                        </label>
+                        <textarea name="{{ form.notes.name }}" 
+                                  id="{{ form.notes.id_for_label }}" 
+                                  class="form-control{% if form.notes.errors %} is-invalid{% endif %}" 
+                                  rows="3" 
+                                  placeholder="Add any notes about this budget (optional)">{{ form.notes.value|default:'' }}</textarea>
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'expenses:budget_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Budget
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if object %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    Budget Statistics
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted mb-3">Spending Progress</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Spent: ${{ object.spent_amount|default:0|floatformat:2 }}</span>
+                                <span>Remaining: ${{ object.remaining_amount|floatformat:2 }}</span>
+                            </div>
+                            <div class="progress budget-progress">
+                                {% with spent_percentage=object.spent_percentage|default:0 %}
+                                <div class="progress-bar 
+                                    {% if spent_percentage > 90 %}
+                                        bg-danger
+                                    {% elif spent_percentage > 75 %}
+                                        bg-warning
+                                    {% else %}
+                                        bg-success
+                                    {% endif %}" 
+                                    role="progressbar" 
+                                    data-width="{{ spent_percentage }}"
+                                    aria-valuenow="{{ spent_percentage }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                </div>
+                                {% endwith %}
+                            </div>
+                            <div class="text-end mt-1">
+                                <small class="text-muted">{{ object.spent_percentage|default:0|floatformat:1 }}% of budget used</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Time Progress</h6>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Elapsed: {{ object.days_elapsed }} days</span>
+                                <span>Remaining: {{ object.days_remaining }} days</span>
+                            </div>
+                            <div class="progress budget-progress">
+                                <div class="progress-bar bg-info time-progress" 
+                                     role="progressbar" 
+                                     data-width="{{ object.time_elapsed_percentage }}"
+                                     aria-valuenow="{{ object.time_elapsed_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="text-end mt-1">
+                                <small class="text-muted">{{ object.time_elapsed_percentage|floatformat:1 }}% of time elapsed</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if object.spending_rate and object.spending_rate != 0 %}
+                        <div class="alert {% if object.spending_rate > 1 %}alert-danger{% else %}alert-success{% endif %} mt-3 mb-0">
+                            <div class="d-flex align-items-center">
+                                <i class="bi {% if object.spending_rate > 1 %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %} me-2"></i>
+                                <div>
+                                    <strong>{% if object.spending_rate > 1 %}Over{% else %}Under{% endif %} Budget</strong>
+                                    <div class="small">
+                                        You're spending at {{ object.spending_rate|floatformat:2 }}x your planned rate.
+                                        {% if object.spending_rate > 1 %}
+                                            At this rate, you'll exceed your budget by ${{ object.projected_overage|floatformat:2 }}.
+                                        {% else %}
+                                            At this rate, you'll have ${{ object.projected_remaining|floatformat:2 }} remaining.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <form action="{% url 'expenses:budget_delete' object.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="btn btn-outline-danger w-100"
+                                    onclick="return confirm('Are you sure you want to delete this budget? This action cannot be undone.');">
+                                <i class="bi bi-trash"></i> Delete Budget
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.budget-progress {
+    height: 10px;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    const forms = document.querySelectorAll('.needs-validation')
+    
+    // Loop over them and prevent submission
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default dates if not set
+    const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+    const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+    
+    // Set default start date to today if empty
+    if (startDateInput && !startDateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        startDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+    
+    // Set default end date to end of current month if empty
+    if (endDateInput && !endDateInput.value) {
+        const today = new Date();
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const yyyy = lastDay.getFullYear();
+        const mm = String(lastDay.getMonth() + 1).padStart(2, '0');
+        const dd = String(lastDay.getDate()).padStart(2, '0');
+        endDateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+    
+    // Update end date min attribute when start date changes
+    if (startDateInput) {
+        startDateInput.addEventListener('change', function() {
+            if (endDateInput) {
+                endDateInput.min = this.value;
+                if (endDateInput.value && new Date(endDateInput.value) < new Date(this.value)) {
+                    endDateInput.value = this.value;
+                }
+            }
+        });
+    }
+    
+    // Auto-format amount input
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    if (amountInput) {
+        amountInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

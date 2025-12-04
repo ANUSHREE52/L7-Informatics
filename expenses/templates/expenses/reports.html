@@ -1,0 +1,582 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Expense Reports - Expense Tracker{% endblock %}
+
+{% block header %}Expense Reports{% endblock %}
+
+{% block header_buttons %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+        <i class="bi bi-download"></i> Export
+    </button>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="reportsTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                            <i class="bi bi-graph-up"></i> Overview
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="category-tab" data-bs-toggle="tab" data-bs-target="#category" type="button" role="tab">
+                            <i class="bi bi-tag"></i> By Category
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="time-tab" data-bs-toggle="tab" data-bs-target="#time" type="button" role="tab">
+                            <i class="bi bi-calendar"></i> Time Period
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="period" class="form-label">Time Period</label>
+                            <select class="form-select" id="period" name="period">
+                                <option value="this_month" {% if period == 'this_month' %}selected{% endif %}>This Month</option>
+                                <option value="last_month" {% if period == 'last_month' %}selected{% endif %}>Last Month</option>
+                                <option value="this_year" {% if period == 'this_year' %}selected{% endif %}>This Year</option>
+                                <option value="last_year" {% if period == 'last_year' %}selected{% endif %}>Last Year</option>
+                                <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 {% if period != 'custom' %}d-none{% endif %}" id="startDateGroup">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ start_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-3 {% if period != 'custom' %}d-none{% endif %}" id="endDateGroup">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ end_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel"></i> Apply Filter
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="tab-content" id="reportsTabContent">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Spending Trend</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="spendingTrendChart" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Spending by Category</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="categoryChart" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Top Expenses</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover mb-0">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Description</th>
+                                                        <th class="text-end">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for expense in top_expenses %}
+                                                        <tr>
+                                                            <td>{{ expense.date|date:"M d" }}</td>
+                                                            <td>{{ expense.description|truncatechars:30 }}</td>
+                                                            <td class="text-end">${{ expense.amount|floatformat:2 }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr>
+                                                            <td colspan="3" class="text-center py-4">No expenses found</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Spending by Day of Week</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="dayOfWeekChart" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Category Tab -->
+                    <div class="tab-pane fade" id="category" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Spending by Category</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Category</th>
+                                                        <th class="text-end">Amount</th>
+                                                        <th class="text-end">% of Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in category_totals %}
+                                                        <tr>
+                                                            <td>
+                                                                <span class="category-dot" style="background-color: {{ item.color }}"></span>
+                                                                {{ item.name }}
+                                                            </td>
+                                                            <td class="text-end">${{ item.total|floatformat:2 }}</td>
+                                                            <td class="text-end">{{ item.percentage|floatformat:1 }}%</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <th>Total</th>
+                                                        <th class="text-end">${{ total_spent|floatformat:2 }}</th>
+                                                        <th class="text-end">100%</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Category Distribution</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="categoryDistributionChart" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Period Tab -->
+                    <div class="tab-pane fade" id="time" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Spending Over Time</h5>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary time-period-btn" data-period="day">Daily</button>
+                                        <button type="button" class="btn btn-outline-secondary time-period-btn active" data-period="week">Weekly</button>
+                                        <button type="button" class="btn btn-outline-secondary time-period-btn" data-period="month">Monthly</button>
+                                        <button type="button" class="btn btn-outline-secondary time-period-btn" data-period="year">Yearly</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="timeSeriesChart" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'expenses:export_report' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="period" value="{{ period }}">
+                    <input type="hidden" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                    
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">Format</label>
+                        <select class="form-select" id="exportFormat" name="format" required>
+                            <option value="csv">CSV</option>
+                            <option value="pdf">PDF</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="exportType" class="form-label">Report Type</label>
+                        <select class="form-select" id="exportType" name="report_type" required>
+                            <option value="summary">Summary Report</option>
+                            <option value="detailed">Detailed Transactions</option>
+                            <option value="category">Category Breakdown</option>
+                            <option value="time">Time Series Data</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Export
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.category-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.time-period-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.card {
+    margin-bottom: 1.5rem;
+}
+
+.table th {
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle period selector change
+    const periodSelect = document.getElementById('period');
+    const startDateGroup = document.getElementById('startDateGroup');
+    const endDateGroup = document.getElementById('endDateGroup');
+    
+    if (periodSelect) {
+        periodSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                startDateGroup.classList.remove('d-none');
+                endDateGroup.classList.remove('d-none');
+            } else {
+                startDateGroup.classList.add('d-none');
+                endDateGroup.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Time period buttons
+    const timePeriodBtns = document.querySelectorAll('.time-period-btn');
+    timePeriodBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            timePeriodBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            // Here you would typically reload the chart with the new time period
+            // For now, we'll just log the selected period
+            console.log('Selected period:', this.dataset.period);
+        });
+    });
+    
+    // Initialize charts
+    initCharts();
+});
+
+function initCharts() {
+    // Spending Trend Chart
+    const spendingTrendCtx = document.getElementById('spendingTrendChart')?.getContext('2d');
+    if (spendingTrendCtx) {
+        new Chart(spendingTrendCtx, {
+            type: 'line',
+            data: {
+                labels: {{ trend_labels|safe }},
+                datasets: [{
+                    label: 'Spending',
+                    data: {{ trend_data|safe }},
+                    borderColor: 'rgba(67, 97, 238, 1)',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Category Chart
+    const categoryCtx = document.getElementById('categoryChart')?.getContext('2d');
+    if (categoryCtx) {
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ category_names|safe }},
+                datasets: [{
+                    data: {{ category_amounts|safe }},
+                    backgroundColor: {{ category_colors|safe }},
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+    
+    // Time Series Chart
+    const timeSeriesCtx = document.getElementById('timeSeriesChart')?.getContext('2d');
+    if (timeSeriesCtx) {
+        new Chart(timeSeriesCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ time_series_labels|safe }},
+                datasets: [{
+                    label: 'Spending',
+                    data: {{ time_series_data|safe }},
+                    backgroundColor: 'rgba(67, 97, 238, 0.7)',
+                    borderColor: 'rgba(67, 97, 238, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Day of Week Chart
+    const dayOfWeekCtx = document.getElementById('dayOfWeekChart')?.getContext('2d');
+    if (dayOfWeekCtx) {
+        new Chart(dayOfWeekCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                datasets: [{
+                    label: 'Average Spending',
+                    data: {{ day_of_week_data|safe }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Category Distribution Chart
+    const categoryDistCtx = document.getElementById('categoryDistributionChart')?.getContext('2d');
+    if (categoryDistCtx) {
+        new Chart(categoryDistCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ category_names|safe }},
+                datasets: [{
+                    data: {{ category_amounts|safe }},
+                    backgroundColor: {{ category_colors|safe }},
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        formatter: (value, ctx) => {
+                            const data = ctx.chart.data.datasets[0].data;
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return percentage >= 5 ? `${percentage}%` : '';
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+}
+</script>
+{% endblock %}

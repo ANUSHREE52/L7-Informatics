@@ -1,0 +1,460 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}{{ alert.title }} - Alert Details{% endblock %}
+
+{% block header %}
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">Alert Details</h1>
+        <div>
+            <a href="{% url 'expenses:alerts' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to Alerts
+            </a>
+            {% if not alert.is_dismissed %}
+                <button type="button" class="btn btn-outline-secondary me-2" 
+                        data-bs-toggle="modal" data-bs-target="#dismissAlertModal">
+                    <i class="bi bi-check-lg"></i> Dismiss
+                </button>
+            {% endif %}
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editAlertModal">
+                            <i class="bi bi-pencil me-2"></i> Edit Alert
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#deleteAlertModal">
+                            <i class="bi bi-trash me-2"></i> Delete
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-4">
+                    <div class="alert-icon me-4">
+                        {% if alert.alert_type == 'budget' %}
+                            <div class="bg-soft-warning text-warning p-3 rounded-circle">
+                                <i class="bi bi-currency-dollar fs-1"></i>
+                            </div>
+                        {% elif alert.alert_type == 'bill' %}
+                            <div class="bg-soft-danger text-danger p-3 rounded-circle">
+                                <i class="bi bi-receipt fs-1"></i>
+                            </div>
+                        {% elif alert.alert_type == 'goal' %}
+                            <div class="bg-soft-success text-success p-3 rounded-circle">
+                                <i class="bi bi-flag fs-1"></i>
+                            </div>
+                        {% else %}
+                            <div class="bg-soft-info text-info p-3 rounded-circle">
+                                <i class="bi bi-bell fs-1"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h2 class="mb-0">{{ alert.title }}</h2>
+                            <span class="badge {% if alert.priority == 'high' %}bg-danger{% elif alert.priority == 'medium' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ alert.get_priority_display }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-{{ alert.alert_type }}"></i> {{ alert.get_alert_type_display }}
+                            {% if alert.related_object %}
+                                • 
+                                {% if alert.alert_type == 'budget' %}
+                                    <a href="{% url 'expenses:budget_detail' alert.related_object.id %}">View Budget</a>
+                                {% elif alert.alert_type == 'expense' %}
+                                    <a href="{% url 'expenses:expense_detail' alert.related_object.id %}">View Expense</a>
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                        <div class="alert {% if alert.is_dismissed %}alert-light{% else %}alert-{% if alert.priority == 'high' %}danger{% elif alert.priority == 'medium' %}warning{% else %}info{% endif %}{% endif %} mb-0">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0 me-3">
+                                    <i class="bi bi-{% if alert.is_dismissed %}check-circle{% else %}exclamation-triangle{% %}-fill"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-1">{{ alert.message }}</p>
+                                    <div class="small text-muted">
+                                        <i class="bi bi-clock"></i> 
+                                        {% if alert.is_dismissed %}
+                                            Dismissed {{ alert.updated_at|timesince }} ago
+                                        {% else %}
+                                            Created {{ alert.created_at|timesince }} ago
+                                        {% endif %}
+                                        {% if alert.is_recurring %}
+                                            • <i class="bi bi-arrow-repeat"></i> Recurring
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h5 class="mb-3">Alert Details</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-tag me-2"></i> Type</span>
+                                <span class="text-muted">{{ alert.get_alert_type_display }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-flag me-2"></i> Priority</span>
+                                <span class="badge {% if alert.priority == 'high' %}bg-danger{% elif alert.priority == 'medium' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ alert.get_priority_display }}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-calendar-check me-2"></i> Created</span>
+                                <span class="text-muted">{{ alert.created_at|date:"M d, Y H:i" }}</span>
+                            </li>
+                            {% if alert.alert_date %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span><i class="bi bi-bell me-2"></i> Alert Date</span>
+                                    <span class="text-muted">{{ alert.alert_date|date:"M d, Y" }}</span>
+                                </li>
+                            {% endif %}
+                            {% if alert.is_recurring %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span><i class="bi bi-arrow-repeat me-2"></i> Recurrence</span>
+                                    <span class="text-muted">{{ alert.get_recurrence_type_display }}</span>
+                                </li>
+                                {% if alert.end_date %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span><i class="bi bi-calendar-x me-2"></i> End Date</span>
+                                        <span class="text-muted">{{ alert.end_date|date:"M d, Y" }}</span>
+                                    </li>
+                                {% endif %}
+                            {% endif %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-info-circle me-2"></i> Status</span>
+                                <span class="badge {% if alert.is_dismissed %}bg-secondary{% else %}bg-success{% endif %}">
+                                    {% if alert.is_dismissed %}Dismissed{% else %}Active{% endif %}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 class="mb-3">Related Information</h5>
+                        {% if alert.related_object %}
+                            {% if alert.alert_type == 'budget' %}
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Budget Details</h6>
+                                        <p class="card-text">
+                                            <strong>Category:</strong> {{ alert.related_object.category.name }}<br>
+                                            <strong>Amount:</strong> ${{ alert.related_object.amount|floatformat:2 }}<br>
+                                            <strong>Period:</strong> {{ alert.related_object.start_date|date:"M d" }} - {{ alert.related_object.end_date|date:"M d, Y" }}
+                                        </p>
+                                        <a href="{% url 'expenses:budget_detail' alert.related_object.id %}" class="btn btn-sm btn-outline-primary">
+                                            View Budget
+                                        </a>
+                                    </div>
+                                </div>
+                            {% elif alert.alert_type == 'expense' %}
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Expense Details</h6>
+                                        <p class="card-text">
+                                            <strong>Amount:</strong> ${{ alert.related_object.amount|floatformat:2 }}<br>
+                                            <strong>Date:</strong> {{ alert.related_object.date|date:"M d, Y" }}<br>
+                                            <strong>Category:</strong> {{ alert.related_object.category.name }}
+                                        </p>
+                                        <a href="{% url 'expenses:expense_detail' alert.related_object.id %}" class="btn btn-sm btn-outline-primary">
+                                            View Expense
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i> No related information available for this alert.
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mt-4">
+                            <h6 class="mb-3">Alert History</h6>
+                            <div class="timeline">
+                                {% for history in alert.history.all|slice:":5" %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-badge">
+                                            <i class="bi bi-{{ history.event_type|lower }}"></i>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">{{ history.get_event_type_display }}</h6>
+                                            <p class="small text-muted mb-1">{{ history.created_at|timesince }} ago</p>
+                                            {% if history.note %}
+                                                <p class="mb-0">{{ history.note }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted">No history available for this alert.</p>
+                                {% endfor %}
+                                {% if alert.history.count > 5 %}
+                                    <div class="text-center mt-2">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View Full History</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if alert.notes %}
+                    <div class="mt-4">
+                        <h5>Notes</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                {{ alert.notes|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        {% if not alert.is_dismissed %}
+                            <button type="button" class="btn btn-outline-secondary" 
+                                    data-bs-toggle="modal" data-bs-target="#dismissAlertModal">
+                                <i class="bi bi-check-lg"></i> Dismiss Alert
+                            </button>
+                        {% else %}
+                            <form action="{% url 'expenses:restore_alert' alert.id %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore Alert
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'expenses:edit_alert' alert.id %}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" 
+                                data-bs-toggle="modal" data-bs-target="#deleteAlertModal">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dismiss Alert Modal -->
+<div class="modal fade" id="dismissAlertModal" tabindex="-1" aria-labelledby="dismissAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dismissAlertModalLabel">Dismiss Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'expenses:dismiss_alert' alert.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to dismiss this alert?</p>
+                    <div class="mb-3">
+                        <label for="dismissNote" class="form-label">Add a note (optional)</label>
+                        <textarea class="form-control" id="dismissNote" name="note" rows="3" 
+                                  placeholder="Add any additional information about dismissing this alert"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="preventRecurrence" name="prevent_recurrence" 
+                               {% if not alert.is_recurring %}disabled{% endif %}>
+                        <label class="form-check-label" for="preventRecurrence" 
+                               {% if not alert.is_recurring %}style="opacity: 0.5;"{% endif %}>
+                            Prevent this alert from recurring
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Dismiss Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Alert Modal -->
+<div class="modal fade" id="deleteAlertModal" tabindex="-1" aria-labelledby="deleteAlertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAlertModalLabel">Delete Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'expenses:delete_alert' alert.id %}" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this alert? This action cannot be undone.</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        If this is a recurring alert, only this instance will be deleted.
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="deleteAllRecurring" name="delete_all_recurring"
+                               {% if not alert.is_recurring %}disabled{% endif %}>
+                        <label class="form-check-label" for="deleteAllRecurring" 
+                               {% if not alert.is_recurring %}style="opacity: 0.5;"{% endif %}>
+                            Delete all future occurrences of this alert
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.alert-icon .rounded-circle {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1rem;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.timeline-badge {
+    position: absolute;
+    left: -2rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+
+.timeline-content {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    position: relative;
+}
+
+.timeline-content::before {
+    content: '';
+    position: absolute;
+    top: 1rem;
+    left: -0.5rem;
+    width: 1rem;
+    height: 1rem;
+    background-color: #f8f9fa;
+    transform: rotate(45deg);
+    z-index: 1;
+}
+
+.bg-soft-primary {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    color: #0d6efd;
+}
+
+.bg-soft-success {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    color: #198754;
+}
+
+.bg-soft-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    color: #ffc107;
+}
+
+.bg-soft-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    color: #dc3545;
+}
+
+.bg-soft-info {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    color: #0dcaf0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle dismiss with note
+    const dismissForm = document.querySelector('form[action*="dismiss_alert"]');
+    if (dismissForm) {
+        dismissForm.addEventListener('submit', function(e) {
+            const note = document.getElementById('dismissNote').value.trim();
+            if (note) {
+                // You can add additional validation or processing here
+                console.log('Dismissing with note:', note);
+            }
+        });
+    }
+    
+    // Handle delete confirmation
+    const deleteForm = document.querySelector('form[action*="delete_alert"]');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const deleteAll = document.getElementById('deleteAllRecurring').checked;
+            if (deleteAll) {
+                if (!confirm('Are you sure you want to delete all future occurrences of this alert? This cannot be undone.')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+    
+    // Toggle delete all recurring checkbox
+    const deleteAllRecurring = document.getElementById('deleteAllRecurring');
+    if (deleteAllRecurring) {
+        deleteAllRecurring.addEventListener('change', function() {
+            console.log('Delete all recurring:', this.checked);
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
+{% block header %}Dashboard{% endblock %}
+
+{% block header_buttons %}
+    <a href="{% url 'expenses:expense_add' %}" class="btn btn-sm btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Expense
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <!-- Summary Cards -->
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted mb-2">This Month</div>
+                    <h3 class="text-primary">${{ total_spent|default:"0.00" }}</h3>
+                    <div class="text-muted small">Total Spent</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted mb-2">Top Category</div>
+                    <h3 class="text-success">
+                        {% if monthly_expenses %}{{ monthly_expenses.0.category__name|default:"-" }}{% else %}-
+                        {% endif %}
+                    </h3>
+                    <div class="text-muted small">
+                        {% if monthly_expenses %}${{ monthly_expenses.0.total|floatformat:2 }}{% else %}$0.00{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted mb-2">Active Budgets</div>
+                    <h3 class="text-info">{{ budget_data|length }}</h3>
+                    <div class="text-muted small">
+                        {% with total_budget=budget_data|map:"budget"|sum %}
+                            ${{ total_budget|default:"0.00" }}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="text-muted mb-2">Alerts</div>
+                    <h3 class="{% if unread_alerts > 0 %}text-danger{% else %}text-secondary{% endif %}">
+                        {{ unread_alerts }}
+                    </h3>
+                    <div class="text-muted small">Unread</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Expense Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Monthly Overview</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary">This Month</button>
+                        <button type="button" class="btn btn-outline-secondary">Last 6 Months</button>
+                        <button type="button" class="btn btn-outline-secondary">This Year</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="expenseChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Budget Progress -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Budget Status</div>
+                <div class="card-body">
+                    {% if budget_data %}
+                        {% for item in budget_data|slice:":5" %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small">{{ item.category }}</span>
+                                    <span class="small">${{ item.spent|floatformat:2 }} of ${{ item.budget|floatformat:2 }}</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar {% if item.percent_used > 90 %}bg-danger{% elif item.percent_used > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ item.percent_used|floatformat:0 }}%" 
+                                         aria-valuenow="{{ item.percent_used }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <div class="text-end small text-muted mt-1">
+                                    {{ item.percent_used|floatformat:0 }}% used
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        {% if budget_data|length > 5 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'expenses:budget_list' %}" class="btn btn-sm btn-outline-primary">
+                                    View All Budgets
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-wallet2 display-6 d-block mb-2"></i>
+                            <p>No budgets set up yet.</p>
+                            <a href="{% url 'expenses:budget_set' %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Set a Budget
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Expenses -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Expenses</span>
+                    <a href="{% url 'expenses:expense_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_expenses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Category</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for expense in recent_expenses %}
+                                        <tr>
+                                            <td>{{ expense.date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <a href="{% url 'expenses:expense_edit' expense.id %}" class="text-decoration-none">
+                                                    {{ expense.description|truncatechars:30 }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">
+                                                    {{ expense.category }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                ${{ expense.amount|floatformat:2 }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-receipt display-6 d-block mb-2"></i>
+                            <p>No expenses recorded yet.</p>
+                            <a href="{% url 'expenses:expense_add' %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add Your First Expense
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Breakdown -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Spending by Category</div>
+                <div class="card-body">
+                    {% if monthly_expenses %}
+                        <div class="mb-4">
+                            <canvas id="categoryChart" height="200"></canvas>
+                        </div>
+                        
+                        <div class="list-group list-group-flush">
+                            {% for expense in monthly_expenses|slice:":5" %}
+                                <div class="list-group-item border-0 px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge me-2" style="background-color: {{ expense.color|default:'#4361ee' }}"></span>
+                                            {{ expense.category__name }}
+                                        </div>
+                                        <div>
+                                            <span class="fw-bold">${{ expense.total|floatformat:2 }}</span>
+                                            <span class="text-muted small">({{ expense.count }})</span>
+                                        </div>
+                                    </div>
+                                    <div class="progress mt-1" style="height: 4px;">
+                                        {% with percent=expense.total|div:total_spent|mul:100|floatformat:0 %}
+                                            <div class="progress-bar" 
+                                                 role="progressbar" 
+                                                 style="width: {{ percent }}%; background-color: {{ expense.color|default:'#4361ee' }}" 
+                                                 aria-valuenow="{{ percent }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if monthly_expenses|length > 5 %}
+                            <div class="text-center mt-3">
+                                <a href="{% url 'expenses:reports' %}" class="btn btn-sm btn-outline-primary">
+                                    View Full Report
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-pie-chart display-6 d-block mb-2"></i>
+                            <p>No spending data available.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Recent Alerts -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent Alerts</span>
+                    <a href="{% url 'expenses:alerts' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if alerts %}
+                        <div class="list-group list-group-flush">
+                            {% for alert in alerts %}
+                                <div class="list-group-item {% if not alert.is_read %}bg-light{% endif %}">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <span class="avatar bg-{% if alert.alert_type == 'budget_exceeded' %}danger{% else %}warning{% endif %}">
+                                                <i class="bi bi-{% if alert.alert_type == 'budget_exceeded' %}exclamation-triangle{% else %}bell{% %}-fill"></i>
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <h6 class="mb-1">{{ alert.get_alert_type_display }}</h6>
+                                                <small class="text-muted">{{ alert.created_at|timesince }} ago</small>
+                                            </div>
+                                            <p class="mb-0">{{ alert.message }}</p>
+                                            {% if alert.related_expense %}
+                                                <small class="text-muted">
+                                                    <a href="{% url 'expenses:expense_edit' alert.related_expense.id %}">
+                                                        View Expense
+                                                    </a>
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-bell-slash display-6 d-block mb-2"></i>
+                            <p>No new alerts.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize charts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Monthly Expense Chart
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+        const expenseChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Expenses',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for expense in monthly_expenses|slice:":5" %}
+                        '{{ expense.category__name }}'{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for expense in monthly_expenses|slice:":5" %}
+                            {{ expense.total|floatformat:2 }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#4361ee', '#3f37c9', '#4cc9f0', '#4895ef', '#560bad',
+                        '#480ca8', '#3a0ca3', '#3f37c9', '#4361ee', '#4895ef'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Load data via AJAX for better performance
+        fetch('{% url "expenses:api_expense_chart_data" %}')
+            .then(response => response.json())
+            .then(data => {
+                // Update the chart with real data
+                expenseChart.data.datasets[0].data = data.data;
+                expenseChart.update();
+            });
+    });
+</script>
+{% endblock %}

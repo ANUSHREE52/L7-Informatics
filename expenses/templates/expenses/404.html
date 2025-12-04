@@ -1,0 +1,179 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Page Not Found - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <div class="error-content mt-5">
+                <div class="error-code display-1 fw-bold text-primary">404</div>
+                <h1 class="display-4 fw-bold mb-3">Page Not Found</h1>
+                <p class="lead text-muted mb-4">
+                    Oops! The page you're looking for doesn't exist or has been moved.
+                </p>
+                <div class="error-illustration mb-5">
+                    <img src="{% static 'images/illustrations/404.svg' %}" 
+                         alt="404 Illustration" 
+                         class="img-fluid" 
+                         style="max-height: 300px;">
+                </div>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{% url 'expenses:dashboard' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-door me-2"></i> Go to Dashboard
+                    </a>
+                    <a href="{% url 'expenses:expense_list' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-wallet2 me-2"></i> View Expenses
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left me-2"></i> Go Back
+                    </button>
+                </div>
+                
+                <div class="mt-5">
+                    <h5 class="mb-3">Looking for something specific?</h5>
+                    <div class="search-box mx-auto" style="max-width: 500px;">
+                        <form action="{% url 'expenses:search' %}" method="get" class="input-group">
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   name="q" 
+                                   placeholder="Search expenses, budgets, and more..."
+                                   required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="mt-5">
+                    <h6 class="text-muted mb-3">Or try these helpful links:</h6>
+                    <div class="d-flex justify-content-center gap-4 flex-wrap">
+                        <a href="{% url 'expenses:budget_list' %}" class="text-decoration-none">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-pie-chart-fill text-primary me-2"></i>
+                                <span>Budgets</span>
+                            </div>
+                        </a>
+                        <a href="{% url 'expenses:reports' %}" class="text-decoration-none">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-graph-up text-primary me-2"></i>
+                                <span>Reports</span>
+                            </div>
+                        </a>
+                        <a href="{% url 'expenses:alerts' %}" class="text-decoration-none">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-bell-fill text-primary me-2"></i>
+                                <span>Alerts</span>
+                            </div>
+                        </a>
+                        <a href="{% url 'expenses:settings' %}" class="text-decoration-none">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-gear-fill text-primary me-2"></i>
+                                <span>Settings</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.error-content {
+    padding: 3rem 0;
+}
+
+.error-code {
+    font-size: 8rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.search-box .form-control {
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.search-box .btn {
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+@media (max-width: 767.98px) {
+    .error-code {
+        font-size: 6rem;
+    }
+    
+    h1.display-4 {
+        font-size: 2rem;
+    }
+    
+    .d-flex.flex-wrap {
+        gap: 0.5rem !important;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to the error code
+    const errorCode = document.querySelector('.error-code');
+    if (errorCode) {
+        errorCode.style.opacity = '0';
+        errorCode.style.transform = 'translateY(-20px)';
+        errorCode.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        
+        setTimeout(() => {
+            errorCode.style.opacity = '1';
+            errorCode.style.transform = 'translateY(0)';
+        }, 100);
+    }
+    
+    // Add hover effect to buttons
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = 'none';
+        });
+    });
+    
+    // Add focus styles for accessibility
+    const focusableElements = document.querySelectorAll('a, button, input, select, textarea');
+    focusableElements.forEach(el => {
+        el.addEventListener('focus', function() {
+            this.style.outline = '2px solid #0d6efd';
+            this.style.outlineOffset = '2px';
+        });
+        
+        el.addEventListener('blur', function() {
+            this.style.outline = 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

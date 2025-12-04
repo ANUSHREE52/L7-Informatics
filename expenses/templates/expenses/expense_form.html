@@ -1,0 +1,226 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}{{ title }} - Expense Tracker{% endblock %}
+
+{% block header %}{{ title }}{% endblock %}
+
+{% block header_buttons %}
+    <a href="{% url 'expenses:expense_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Expenses
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label">
+                                {{ form.amount.label }}
+                                {% if form.amount.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       name="{{ form.amount.name }}" 
+                                       id="{{ form.amount.id_for_label }}" 
+                                       class="form-control{% if form.amount.errors %} is-invalid{% endif %}" 
+                                       value="{{ form.amount.value|default:'' }}" 
+                                       step="0.01" 
+                                       min="0.01" 
+                                       required>
+                                {% if form.amount.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.amount.errors.0 }}
+                                    </div>
+                                {% else %}
+                                    <div class="invalid-feedback">
+                                        Please enter a valid amount.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.date.id_for_label }}" class="form-label">
+                                {{ form.date.label }}
+                                {% if form.date.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            <input type="date" 
+                                   name="{{ form.date.name }}" 
+                                   id="{{ form.date.id_for_label }}" 
+                                   class="form-control{% if form.date.errors %} is-invalid{% endif %}" 
+                                   value="{{ form.date.value|date:'Y-m-d'|default:'' }}" 
+                                   required>
+                            {% if form.date.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.date.errors.0 }}
+                                </div>
+                            {% else %}
+                                <div class="invalid-feedback">
+                                    Please select a date.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">
+                            {{ form.category.label }}
+                            {% if form.category.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        <select name="{{ form.category.name }}" 
+                                id="{{ form.category.id_for_label }}" 
+                                class="form-select{% if form.category.errors %} is-invalid{% endif %}" 
+                                required>
+                            <option value="">Select a category</option>
+                            {% for value, label in form.category.field.choices %}
+                                <option value="{{ value }}" 
+                                        {% if form.category.value == value|stringformat:'s' %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.category.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.category.errors.0 }}
+                            </div>
+                        {% else %}
+                            <div class="invalid-feedback">
+                                Please select a category.
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <a href="{% url 'expenses:category_add' %}?next={{ request.path|urlencode }}" 
+                               class="text-decoration-none">
+                                <i class="bi bi-plus-circle"></i> Add new category
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            {{ form.description.label }}
+                            {% if form.description.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        <textarea name="{{ form.description.name }}" 
+                                  id="{{ form.description.id_for_label }}" 
+                                  class="form-control{% if form.description.errors %} is-invalid{% endif %}" 
+                                  rows="3" 
+                                  placeholder="Enter a brief description" 
+                                  required>{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% else %}
+                            <div class="invalid-feedback">
+                                Please enter a description.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'expenses:expense_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {% if object %}
+    <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card">
+            <div class="card-header">
+                Expense Details
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Created:</dt>
+                    <dd class="col-sm-7">{{ object.created_at|date:"M d, Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-5">Last Updated:</dt>
+                    <dd class="col-sm-7">{{ object.updated_at|date:"M d, Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-5">Added by:</dt>
+                    <dd class="col-sm-7">{{ object.user.username }}</dd>
+                </dl>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'expenses:expense_delete' object.id %}" 
+                       class="btn btn-outline-danger"
+                       onclick="return confirm('Are you sure you want to delete this expense? This action cannot be undone.');">
+                        <i class="bi bi-trash"></i> Delete Expense
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    const forms = document.querySelectorAll('.needs-validation')
+    
+    // Loop over them and prevent submission
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Auto-format currency input
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('{{ form.amount.id_for_label }}');
+    
+    if (amountInput) {
+        amountInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+        });
+    }
+    
+    // Set default date to today if empty
+    const dateInput = document.getElementById('{{ form.date.id_for_label }}');
+    if (dateInput && !dateInput.value) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+});
+</script>
+{% endblock %}
