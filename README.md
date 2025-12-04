@@ -2,7 +2,7 @@
 
 A comprehensive web application for tracking personal expenses, managing budgets, and analyzing spending patterns.
 
-## 🚀 Features
+##  Features
 
 - **User Authentication**
   - Secure signup and login
@@ -24,7 +24,7 @@ A comprehensive web application for tracking personal expenses, managing budgets
   - Category-wise spending
   - Export reports (CSV/PDF)
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 ### Backend
 - **Framework**: Django 4.2
@@ -43,7 +43,7 @@ A comprehensive web application for tracking personal expenses, managing budgets
 - **Package Manager**: pip
 - **Virtual Environment**: venv
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Python 3.8+
@@ -93,34 +93,8 @@ A comprehensive web application for tracking personal expenses, managing budgets
    - Main app: http://127.0.0.1:8000/
    - Admin panel: http://127.0.0.1:8000/admin/
 
-## 📂 Project Structure
 
-```
-expense_tracker/
-├── expenses/                # Main application
-│   ├── migrations/         # Database migrations
-│   ├── static/             # Static files (CSS, JS, images)
-│   │   ├── css/           # Stylesheets
-│   │   ├── js/            # JavaScript files
-│   │   └── images/        # Image assets
-│   ├── templates/          # HTML templates
-│   │   └── expenses/      # App-specific templates
-│   ├── admin.py           # Admin configuration
-│   ├── apps.py            # App configuration
-│   ├── forms.py           # Form definitions
-│   ├── models.py          # Database models
-│   ├── urls.py            # URL routing
-│   └── views.py           # View functions
-├── expense_tracker/        # Project configuration
-│   ├── settings.py        # Project settings
-│   ├── urls.py           # Main URL configuration
-│   └── wsgi.py           # WSGI configuration
-├── manage.py              # Django management script
-├── requirements.txt       # Project dependencies
-└── README.md              # This file
-```
-
-## 🔧 Configuration
+##  Configuration
 
 1. **Environment Variables**
    Create a `.env` file in the project root with:
@@ -134,7 +108,7 @@ expense_tracker/
    - By default, SQLite is used for development
    - For production, configure PostgreSQL in `settings.py`
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -142,17 +116,8 @@ expense_tracker/
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📧 Contact
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - your.email@example.com
-
-Project Link: [https://github.com/yourusername/expense-tracker](https://github.com/yourusername/expense-tracker)
-
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - [Django Documentation](https://docs.djangoproject.com/)
 - [Bootstrap 5](https://getbootstrap.com/)
